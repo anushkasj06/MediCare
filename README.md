@@ -1,41 +1,34 @@
-# Hospital Fullstack
+# Hospital Appointment & Prescription Management System
 
-This repository contains:
+This repository contains a fullstack hospital workflow project based on the blueprint for a hospital appointment booking and smart follow-up system.
+
+## Project Structure
 
 - `hospital-app` - React + Vite frontend
 - `hospital-backend` - Node.js + Express + MongoDB backend
 
-## What was fixed
+## Implemented Scope
 
-Before this integration pass, the project had a few setup blockers:
+The current project includes the main blueprint flows for:
 
-- the frontend was missing `package.json`
-- the frontend router had broken lazy imports and invalid route wiring
-- shared frontend utilities referenced missing files
-- some common components had prop mismatches that caused runtime issues
-- the doctor module had compile/runtime errors
-- the backend seed script pointed to the wrong model path
-- backend CORS handling was too rigid for local integration
+- patient registration, login, dashboard, appointments, prescriptions, reminders, profile, notifications
+- doctor registration, profile, verification, availability, appointments, patient details, prescription upload, medical record entry
+- admin dashboard, doctor verification queue, users, logs, reports, settings
+- public pages for home, doctors, about, FAQ, and contact
+
+## What Was Fixed During Integration
+
+Before integration, the project had a few blockers:
+
+- missing frontend `package.json`
+- broken route wiring and lazy imports
+- missing shared frontend utility exports
+- several shared component/runtime mismatches
+- doctor module compile/runtime issues
+- backend seeder import path issue
+- rigid local CORS handling
 
 The codebase is now wired so the frontend builds successfully and the backend app loads correctly.
-
-## Blueprint alignment summary
-
-The project now matches the main blueprint modules:
-
-- patient auth, dashboard, appointments, prescriptions, medical history, reminders, profile, notifications
-- doctor auth, profile, verification, availability, appointments, patient details, prescription upload, medical record entry
-- admin dashboard, doctor verification queue, users, logs, reports, settings
-- backend APIs for auth, doctors, patients, appointments, prescriptions, medical history, reminders, chatbot, admin, automation
-
-Public marketing pages from the blueprint are present in lightweight form:
-
-- `/`
-- `/about`
-- `/contact`
-- `/faq`
-
-The `/doctors` public flow currently redirects into the booking experience instead of having a fully separate public doctor catalog/details implementation.
 
 ## Prerequisites
 
@@ -51,21 +44,14 @@ node --version
 npm --version
 ```
 
-## Backend setup
-
-Go to:
+## Backend Setup
 
 ```bash
 cd hospital-backend
-```
-
-Install dependencies:
-
-```bash
 npm install
 ```
 
-Update `hospital-backend/.env`.
+Create and update `hospital-backend/.env`.
 
 Minimum required values:
 
@@ -86,8 +72,8 @@ Optional for later:
 
 Notes:
 
-- the backend starts without Cloudinary/Gmail/Twilio filled in
-- upload/email/SMS features need those credentials before they can work end-to-end
+- backend startup works without Cloudinary, Gmail, or Twilio configured
+- uploads, emails, and SMS need those credentials for full production behavior
 
 Seed the admin user:
 
@@ -112,14 +98,7 @@ Expected local API base:
 http://localhost:5000/api
 ```
 
-Health checks:
-
-- `http://localhost:5000/health`
-- `http://localhost:5000/api/health`
-
-## Frontend setup
-
-Open a second terminal:
+## Frontend Setup
 
 ```bash
 cd hospital-app
@@ -144,9 +123,9 @@ Expected local app:
 http://localhost:5173
 ```
 
-## Local run flow
+## Local Run Flow
 
-Start both apps:
+Start both apps.
 
 Terminal 1:
 
@@ -168,7 +147,7 @@ Then open:
 http://localhost:5173
 ```
 
-## Main accounts and flows
+## Main Accounts and Flows
 
 Admin:
 
@@ -185,27 +164,39 @@ Doctor:
 - submit verification docs
 - admin approves from `/admin/doctors/pending`
 
-## Build and verification
+## Public Routes
 
-Verified during this integration:
+- `/`
+- `/doctors`
+- `/about`
+- `/faq`
+- `/contact`
 
-- frontend production build: `npm run build` in `hospital-app`
-- backend app load: `node -e "require('./src/app')"`
-- backend seed: `npm run seed`
+## Build and Verification
 
-## Important notes
+Verified during integration:
 
-- CORS is configured for local frontend origins and supports `withCredentials`
+- frontend production build with `npm run build` in `hospital-app`
+- backend app load
+- backend seed flow
+
+## Important Notes
+
+- CORS is configured for local frontend origins
 - frontend API calls use `VITE_API_URL`
-- token refresh remains wired through the frontend axios client
 - if MongoDB Atlas blocks access, allow your IP or allow access from anywhere for development
 - if uploads fail later, add Cloudinary credentials to the backend `.env`
 - if emails fail later, add Gmail app password credentials to the backend `.env`
 
-## Folder structure
+## Blueprint Alignment Note
 
-```text
-hospital-fullstack/
-├── hospital-app/
-└── hospital-backend/
-```
+This repository follows the hospital fullstack blueprint for:
+
+- role-based architecture
+- verified doctor workflow
+- appointment lifecycle handling
+- prescription and reminder linkage
+- medical history centralization
+- admin monitoring and reporting
+
+Some blueprint ideas remain lightweight in the current implementation, especially the public doctor discovery experience, which is intentionally simpler than a full production doctor catalog/details system.
