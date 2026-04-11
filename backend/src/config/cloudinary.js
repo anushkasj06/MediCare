@@ -1,5 +1,5 @@
 const cloudinary = require('cloudinary').v2
-const { CloudinaryStorage } = require('multer-storage-cloudinary')
+const multerStorageCloudinary = require('multer-storage-cloudinary')
 const multer = require('multer')
 const fs = require('fs')
 const path = require('path')
@@ -34,9 +34,27 @@ const createDiskStorage = (folder) => multer.diskStorage({
   },
 })
 
+const createCloudinaryStorage = (options) => {
+  // v2 exports a factory function; newer versions can export a class.
+  if (typeof multerStorageCloudinary === 'function' && !multerStorageCloudinary.CloudinaryStorage) {
+    return multerStorageCloudinary(options)
+  }
+
+  const StorageConstructor =
+    multerStorageCloudinary.CloudinaryStorage ||
+    multerStorageCloudinary.default ||
+    multerStorageCloudinary
+
+  if (typeof StorageConstructor !== 'function') {
+    throw new TypeError('Invalid multer-storage-cloudinary export. Expected a function or CloudinaryStorage class.')
+  }
+
+  return new StorageConstructor(options)
+}
+
 // Doctor document uploads
 const doctorDocStorage = hasCloudinaryConfig
-  ? new CloudinaryStorage({
+  ? createCloudinaryStorage({
       cloudinary,
       params: {
         folder: 'hospital/doctor-documents',
@@ -48,7 +66,7 @@ const doctorDocStorage = hasCloudinaryConfig
 
 // Prescription uploads
 const prescriptionStorage = hasCloudinaryConfig
-  ? new CloudinaryStorage({
+  ? createCloudinaryStorage({
       cloudinary,
       params: {
         folder: 'hospital/prescriptions',
@@ -60,7 +78,7 @@ const prescriptionStorage = hasCloudinaryConfig
 
 // Lab report uploads
 const labReportStorage = hasCloudinaryConfig
-  ? new CloudinaryStorage({
+  ? createCloudinaryStorage({
       cloudinary,
       params: {
         folder: 'hospital/lab-reports',
@@ -72,7 +90,7 @@ const labReportStorage = hasCloudinaryConfig
 
 // Profile photo uploads
 const profilePhotoStorage = hasCloudinaryConfig
-  ? new CloudinaryStorage({
+  ? createCloudinaryStorage({
       cloudinary,
       params: {
         folder: 'hospital/profile-photos',
