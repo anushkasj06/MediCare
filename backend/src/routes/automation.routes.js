@@ -11,6 +11,7 @@ router.post('/reminder-status',   ctrl.updateReminderStatus)
 router.get('/twiml/reminder',     ctrl.getVoiceTwiml)
 router.post('/twiml/reminder',    ctrl.getVoiceTwiml)
 router.post('/twiml/gather',      ctrl.handleGather)
+router.post('/twilio/status',     ctrl.handleTwilioStatusCallback)
 
 // Admin only
 router.get('/workflow-status',    authMiddleware, roleMiddleware('admin'), ctrl.getWorkflowStatus)

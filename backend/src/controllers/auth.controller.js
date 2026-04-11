@@ -5,6 +5,8 @@ const { RefreshToken } = require('../models/index')
 const { signAccessToken, signRefreshToken, signEmailToken, verifyToken } = require('../utils/jwt')
 const { sendEmail, emailTemplates } = require('../utils/email')
 const { generateOtp } = require('../utils/helpers')
+const { sendOtp } = require('../utils/twilio')
+const logger = require('../utils/logger')
 const { sendSuccess, sendError } = require('../utils/response')
 
 // OTP store (in production use Redis)
@@ -250,11 +252,19 @@ exports.verifyEmail = async (req, res) => {
 // POST /api/auth/verify-phone/send-otp
 exports.sendPhoneOtp = async (req, res) => {
   const { phone } = req.body
+
+  if (!phone) return sendError(res, 400, 'Phone number is required')
+
   const otp = generateOtp(6)
   otpStore.set(phone, { otp, expires: Date.now() + 10 * 60 * 1000 })
 
-  // In production, send via Twilio
-  console.log(`OTP for ${phone}: ${otp}`) // dev only
+  try {
+    await sendOtp(phone, otp)
+  } catch (err) {
+    otpStore.delete(phone)
+    logger.error(`Failed to send OTP via Twilio: ${err.message}`)
+    return sendError(res, 500, 'Unable to send OTP right now. Please try again.')
+  }
 
   sendSuccess(res, 200, 'OTP sent successfully')
 }

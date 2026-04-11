@@ -8,6 +8,8 @@ const {
   validateLogin,
   validateForgotPassword,
   validateResetPassword,
+  validateSendPhoneOtp,
+  validateConfirmPhoneOtp,
 } = require('../validators/auth.validator')
 const handleValidation = require('../middleware/validate')
 
@@ -20,8 +22,8 @@ router.post('/forgot-password',  validateForgotPassword,  handleValidation, ctrl
 router.post('/reset-password/:token', validateResetPassword, handleValidation, ctrl.resetPassword)
 router.post('/change-password',  authMiddleware, ctrl.changePassword)
 router.get('/verify-email/:token', ctrl.verifyEmail)
-router.post('/verify-phone/send-otp',    ctrl.sendPhoneOtp)
-router.post('/verify-phone/confirm-otp', ctrl.confirmPhoneOtp)
+router.post('/verify-phone/send-otp', validateSendPhoneOtp, handleValidation, ctrl.sendPhoneOtp)
+router.post('/verify-phone/confirm-otp', validateConfirmPhoneOtp, handleValidation, ctrl.confirmPhoneOtp)
 router.get('/me', authMiddleware, ctrl.getMe)
 
 module.exports = router

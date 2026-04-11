@@ -43,10 +43,23 @@ const validateResetPassword = [
   }),
 ]
 
+const validateSendPhoneOtp = [
+  body('phone').trim().notEmpty().withMessage('Phone is required')
+    .isMobilePhone().withMessage('Valid phone number is required'),
+]
+
+const validateConfirmPhoneOtp = [
+  body('phone').trim().notEmpty().withMessage('Phone is required')
+    .isMobilePhone().withMessage('Valid phone number is required'),
+  body('otp').trim().isLength({ min: 4, max: 8 }).withMessage('Valid OTP is required'),
+]
+
 module.exports = {
   validatePatientRegister,
   validateDoctorRegister,
   validateLogin,
   validateForgotPassword,
   validateResetPassword,
+  validateSendPhoneOtp,
+  validateConfirmPhoneOtp,
 }

@@ -1,9 +1,20 @@
 const Appointment = require('../models/Appointment')
 const DoctorProfile = require('../models/DoctorProfile')
 const Reminder = require('../models/Reminder')
+const { NotificationLog } = require('../models/index')
 const User = require('../models/User')
 const { sendSuccess, sendError } = require('../utils/response')
 const { generateSlots, getDayOfWeek } = require('../utils/helpers')
+const { sendSms } = require('../utils/twilio')
+const logger = require('../utils/logger')
+
+const formatAppointmentDate = (date) => {
+  return new Date(date).toLocaleDateString('en-IN', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  })
+}
 
 // POST /api/appointments
 exports.createAppointment = async (req, res) => {
@@ -65,6 +76,25 @@ exports.createAppointment = async (req, res) => {
     scheduledTime: before24h, channel: 'sms', status: 'pending', source: 'appointment',
     createdBy: req.user._id,
   })
+
+  try {
+    const smsBody = `Appointment confirmed with Dr. ${doctor.fullName} on ${formatAppointmentDate(apptDate)} at ${appointmentTime}.`
+    const sms = await sendSms({ to: req.user.phone, message: smsBody })
+
+    await NotificationLog.create({
+      userId: req.user._id,
+      type: 'sms',
+      title: 'Appointment confirmation',
+      body: smsBody,
+      provider: sms.provider,
+      providerMessageId: sms.sid || '',
+      status: sms.isMock ? 'sent' : 'pending',
+      sentAt: new Date(),
+      metadata: { appointmentId: appointment._id, trigger: 'appointment-booking' },
+    })
+  } catch (err) {
+    logger.error(`Failed to send appointment confirmation SMS: ${err.message}`)
+  }
 
   sendSuccess(res, 201, 'Appointment booked successfully', appointment)
 }
