@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { X, ChevronDown, ChevronLeft, ChevronRight, Search, Upload, Check, AlertCircle, Info, CheckCircle, XCircle, Loader2 } from 'lucide-react'
 import { clsx } from 'clsx'
 import { getInitials } from '../../utils/index.js'
@@ -81,20 +82,22 @@ export const Modal = ({ open, onClose, title, children, size='md', footer }) => 
 
   if (!open) return null
   const sizes = { sm: 'max-w-md', md: 'max-w-lg', lg: 'max-w-2xl', xl: 'max-w-4xl', full: 'max-w-6xl' }
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+
+  return createPortal(
+    <div className="fixed inset-0 z-[80] flex items-start sm:items-center justify-center p-4 sm:p-6 overflow-y-auto">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fadeIn" onClick={onClose} />
-      <div className={clsx('relative bg-white rounded-2xl shadow-modal w-full animate-fadeUp', sizes[size])}>
+      <div className={clsx('relative my-4 sm:my-0 bg-white rounded-2xl shadow-modal w-full max-h-[calc(100dvh-2rem)] sm:max-h-[85dvh] overflow-hidden animate-fadeUp', sizes[size])}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <h3 className="font-display text-lg font-semibold text-text">{title}</h3>
           <button onClick={onClose} className="text-text-light hover:text-text transition-colors p-1 rounded-lg hover:bg-surface-2">
             <X size={18} />
           </button>
         </div>
-        <div className="px-6 py-5 max-h-[70vh] overflow-y-auto">{children}</div>
+        <div className="px-6 py-5 overflow-y-auto max-h-[calc(100dvh-12rem)] sm:max-h-[65dvh]">{children}</div>
         {footer && <div className="px-6 py-4 border-t border-border bg-surface-2 rounded-b-2xl flex items-center justify-end gap-3">{footer}</div>}
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 

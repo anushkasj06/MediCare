@@ -120,15 +120,15 @@ const sendSms = async ({ to, message, statusCallbackUrl } = {}) => {
   }
 }
 
-const makeVoiceCall = async ({ to, twimlUrl, statusCallbackUrl } = {}) => {
+const makeVoiceCall = async ({ to, twimlUrl, twiml, statusCallbackUrl } = {}) => {
   const formattedTo = normalizePhone(to)
 
   if (!formattedTo) throw new Error('Invalid phone number for voice call. Use E.164 format like +919876543210 or set TWILIO_DEFAULT_COUNTRY_CODE.')
-  if (!twimlUrl) throw new Error('TwiML URL is required for voice call')
+  if (!twimlUrl && !twiml) throw new Error('Either TwiML URL or inline TwiML is required for voice call')
 
   const client = getTwilioClient()
   if (!client) {
-    logger.info(`[TWILIO MOCK][CALL] to=${formattedTo} twimlUrl=${twimlUrl}`)
+    logger.info(`[TWILIO MOCK][CALL] to=${formattedTo} mode=${twiml ? 'inline-twiml' : 'url'}`)
     return {
       sid: `MOCK_CALL_${Date.now()}`,
       status: 'completed',
@@ -141,8 +141,13 @@ const makeVoiceCall = async ({ to, twimlUrl, statusCallbackUrl } = {}) => {
   const payload = {
     to: formattedTo,
     from: process.env.TWILIO_PHONE_NUMBER,
-    url: twimlUrl,
-    method: 'POST',
+  }
+
+  if (twiml) {
+    payload.twiml = twiml
+  } else {
+    payload.url = twimlUrl
+    payload.method = 'POST'
   }
 
   if (statusCallbackUrl) {

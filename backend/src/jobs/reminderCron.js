@@ -8,6 +8,7 @@ const { sendEmail } = require('../utils/email')
 
 const MAX_RETRY_ATTEMPTS = 3
 const BASE_RETRY_MINUTES = 5
+const REMINDER_DISPATCH_CRON = process.env.REMINDER_DISPATCH_CRON || '* * * * *'
 
 const isPrivateOrLocalHostname = (hostname = '') => {
   const host = String(hostname || '').toLowerCase()
@@ -31,6 +32,15 @@ const isPublicHttpUrl = (rawUrl) => {
   } catch (_) {
     return false
   }
+}
+
+const escapeXml = (value = '') => {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;')
 }
 
 const getRetryDelayMinutes = (attemptNumber) => {
@@ -76,30 +86,45 @@ const buildVoiceTwimlUrl = (reminderId) => {
     })
     .filter(Boolean)
 
-  let base = configuredUrl
-
-  try {
-    if (configuredUrl) {
+  if (configuredUrl) {
+    try {
       const parsed = new URL(configuredUrl)
       if (frontendHosts.includes(parsed.host)) {
-        logger.warn('TWILIO_VOICE_URL points to a frontend origin. Falling back to backend TwiML route.')
-        base = null
+        logger.warn('TWILIO_VOICE_URL points to a frontend origin. Falling back to inline TwiML for local call flow.')
+      } else if (isPublicHttpUrl(configuredUrl)) {
+        parsed.searchParams.set('reminderId', reminderId.toString())
+        return parsed.toString()
+      } else {
+        logger.warn('TWILIO_VOICE_URL is not publicly accessible. Falling back to inline TwiML for local call flow.')
       }
+    } catch (_) {
+      logger.warn('TWILIO_VOICE_URL is invalid. Falling back to inline TwiML for local call flow.')
     }
-  } catch (_) {
-    base = null
   }
 
-  const fallback = `${buildBackendBaseUrl()}/api/automation/twiml/reminder`
-  const rawUrl = base || fallback
-
-  try {
-    const twimlUrl = new URL(rawUrl)
+  const backendTwimlBase = `${buildBackendBaseUrl()}/api/automation/twiml/reminder`
+  if (isPublicHttpUrl(backendTwimlBase)) {
+    const twimlUrl = new URL(backendTwimlBase)
     twimlUrl.searchParams.set('reminderId', reminderId.toString())
     return twimlUrl.toString()
-  } catch (_) {
-    return `${fallback}?reminderId=${reminderId}`
   }
+
+  return null
+}
+
+const buildInlineReminderTwiml = (reminder, patient) => {
+  const patientName = escapeXml(patient?.fullName || 'there')
+  const title = escapeXml(reminder?.title || 'Health reminder')
+  const description = escapeXml(reminder?.description || '')
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Say voice="alice">Hello ${patientName}. This is a reminder from Medicare.</Say>
+  <Pause length="1" />
+  <Say voice="alice">${title}.</Say>
+  ${description ? `<Say voice="alice">${description}.</Say>` : ''}
+  <Say voice="alice">Thank you. Take care.</Say>
+</Response>`
 }
 
 const scheduleRetry = async (reminder, attempts) => {
@@ -139,9 +164,11 @@ const processReminder = async (reminder) => {
       provider = sms.provider
       notificationStatus = sms.isMock ? 'sent' : 'pending'
     } else if (reminder.channel === 'call') {
+      const twimlUrl = buildVoiceTwimlUrl(reminder._id)
       const call = await makeVoiceCall({
         to: patient.phone,
-        twimlUrl: buildVoiceTwimlUrl(reminder._id),
+        twimlUrl,
+        twiml: twimlUrl ? undefined : buildInlineReminderTwiml(reminder, patient),
         statusCallbackUrl: buildStatusCallbackUrl(reminder._id, 'call'),
       })
 
@@ -300,7 +327,7 @@ const scheduleAppointmentReminders = async () => {
   }
 }
 
-cron.schedule('*/5 * * * *', dispatchDueReminders, {
+cron.schedule(REMINDER_DISPATCH_CRON, dispatchDueReminders, {
   scheduled: true,
   timezone: 'Asia/Kolkata',
 })
@@ -310,6 +337,6 @@ cron.schedule('*/30 * * * *', scheduleAppointmentReminders, {
   timezone: 'Asia/Kolkata',
 })
 
-logger.info('Cron jobs registered: reminder dispatch (5min) | appointment reminders (30min)')
+logger.info(`Cron jobs registered: reminder dispatch (${REMINDER_DISPATCH_CRON}) | appointment reminders (30min)`)
 
 module.exports = { dispatchDueReminders, scheduleAppointmentReminders }
