@@ -9,6 +9,30 @@ const { sendEmail } = require('../utils/email')
 const MAX_RETRY_ATTEMPTS = 3
 const BASE_RETRY_MINUTES = 5
 
+const isPrivateOrLocalHostname = (hostname = '') => {
+  const host = String(hostname || '').toLowerCase()
+
+  if (!host) return true
+  if (host === 'localhost' || host === '127.0.0.1' || host === '::1') return true
+  if (host.endsWith('.local')) return true
+
+  if (/^10\./.test(host)) return true
+  if (/^192\.168\./.test(host)) return true
+  if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(host)) return true
+
+  return false
+}
+
+const isPublicHttpUrl = (rawUrl) => {
+  try {
+    const parsed = new URL(rawUrl)
+    if (!['http:', 'https:'].includes(parsed.protocol)) return false
+    return !isPrivateOrLocalHostname(parsed.hostname)
+  } catch (_) {
+    return false
+  }
+}
+
 const getRetryDelayMinutes = (attemptNumber) => {
   const safeAttempt = Math.max(1, attemptNumber)
   return BASE_RETRY_MINUTES * (2 ** (safeAttempt - 1))
@@ -23,13 +47,18 @@ const buildBackendBaseUrl = () => {
 const buildStatusCallbackUrl = (reminderId, channel) => {
   const rawBase = process.env.TWILIO_STATUS_CALLBACK_URL || `${buildBackendBaseUrl()}/api/automation/twilio/status`
 
+  if (!isPublicHttpUrl(rawBase)) {
+    logger.warn('Skipping Twilio status callback URL because backend URL is local/private. Set TWILIO_STATUS_CALLBACK_URL to a public URL to enable callbacks.')
+    return null
+  }
+
   try {
     const url = new URL(rawBase)
     url.searchParams.set('reminderId', reminderId.toString())
     url.searchParams.set('channel', channel)
     return url.toString()
   } catch (_) {
-    return `${buildBackendBaseUrl()}/api/automation/twilio/status?reminderId=${reminderId}&channel=${channel}`
+    return null
   }
 }
 

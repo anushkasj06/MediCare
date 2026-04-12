@@ -2,6 +2,18 @@ const logger = require('./logger')
 
 let cachedClient = null
 
+const getDefaultCountryCode = () => {
+  const fallback = '+91'
+  const raw = (process.env.TWILIO_DEFAULT_COUNTRY_CODE || fallback).trim()
+
+  if (!raw) return fallback
+
+  const digits = raw.replace(/\D/g, '')
+  return digits ? `+${digits}` : fallback
+}
+
+const isLikelyE164 = (phone = '') => /^\+[1-9]\d{9,14}$/.test(phone)
+
 const isTwilioConfigured = () => {
   return Boolean(
     process.env.TWILIO_ACCOUNT_SID &&
@@ -26,10 +38,28 @@ const normalizePhone = (phone = '') => {
 
   const trimmed = phone.trim()
   if (!trimmed) return ''
-  if (trimmed.startsWith('+')) return trimmed
+
+  if (trimmed.startsWith('+')) {
+    const normalized = `+${trimmed.replace(/\D/g, '')}`
+    return isLikelyE164(normalized) ? normalized : ''
+  }
+
+  if (trimmed.startsWith('00')) {
+    const normalized = `+${trimmed.slice(2).replace(/\D/g, '')}`
+    return isLikelyE164(normalized) ? normalized : ''
+  }
 
   const digits = trimmed.replace(/\D/g, '')
-  return digits ? `+${digits}` : ''
+  if (!digits) return ''
+
+  // Assume local number and prepend default country code for valid E.164 output.
+  if (digits.length === 10) {
+    const normalized = `${getDefaultCountryCode()}${digits}`
+    return isLikelyE164(normalized) ? normalized : ''
+  }
+
+  const normalized = `+${digits}`
+  return isLikelyE164(normalized) ? normalized : ''
 }
 
 const normalizeTwilioStatus = (status = '') => {
@@ -56,7 +86,7 @@ const sendSms = async ({ to, message, statusCallbackUrl } = {}) => {
   const formattedTo = normalizePhone(to)
   const body = String(message || '').trim()
 
-  if (!formattedTo) throw new Error('Phone number is required for SMS')
+  if (!formattedTo) throw new Error('Invalid phone number for SMS. Use E.164 format like +919876543210 or set TWILIO_DEFAULT_COUNTRY_CODE.')
   if (!body) throw new Error('Message body is required for SMS')
 
   const client = getTwilioClient()
@@ -93,7 +123,7 @@ const sendSms = async ({ to, message, statusCallbackUrl } = {}) => {
 const makeVoiceCall = async ({ to, twimlUrl, statusCallbackUrl } = {}) => {
   const formattedTo = normalizePhone(to)
 
-  if (!formattedTo) throw new Error('Phone number is required for voice call')
+  if (!formattedTo) throw new Error('Invalid phone number for voice call. Use E.164 format like +919876543210 or set TWILIO_DEFAULT_COUNTRY_CODE.')
   if (!twimlUrl) throw new Error('TwiML URL is required for voice call')
 
   const client = getTwilioClient()
