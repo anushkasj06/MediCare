@@ -7,9 +7,11 @@ Full-stack healthcare platform with appointment booking, prescription management
 ## 📁 Project Structure
 
 ```
-hospital-app/          ← React + Vite frontend (already done)
-hospital-backend/      ← Node.js + Express backend (this repo)
+frontend/              ← React + Vite frontend
+backend/               ← Node.js + Express backend (this repo)
 ```
+
+For deployment instructions (Render + Vercel), see `../DEPLOYMENT.md`.
 
 ---
 
@@ -18,7 +20,7 @@ hospital-backend/      ← Node.js + Express backend (this repo)
 ### 1. Backend Setup
 
 ```bash
-cd hospital-backend
+cd backend
 npm install
 cp .env.example .env      # Fill in your credentials (see below)
 npm run seed              # Creates default admin account
@@ -28,7 +30,7 @@ npm run dev               # Starts on http://localhost:5000
 ### 2. Frontend Setup
 
 ```bash
-cd hospital-app
+cd frontend
 npm install
 # .env is already configured to point at http://localhost:5000/api
 npm run dev               # Starts on http://localhost:5173

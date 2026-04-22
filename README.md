@@ -4,8 +4,14 @@ This repository contains a fullstack hospital workflow project based on the blue
 
 ## Project Structure
 
-- `hospital-app` - React + Vite frontend
-- `hospital-backend` - Node.js + Express + MongoDB backend
+- `frontend` - React + Vite frontend
+- `backend` - Node.js + Express + MongoDB backend
+
+## Deployment
+
+Use this guide for production deployment:
+
+- Frontend on Vercel + Backend on Render: see [DEPLOYMENT.md](DEPLOYMENT.md)
 
 ## Implemented Scope
 
@@ -47,11 +53,11 @@ npm --version
 ## Backend Setup
 
 ```bash
-cd hospital-backend
+cd backend
 npm install
 ```
 
-Create and update `hospital-backend/.env`.
+Create and update `backend/.env`.
 
 Minimum required values:
 
@@ -101,7 +107,7 @@ http://localhost:5000/api
 ## Frontend Setup
 
 ```bash
-cd hospital-app
+cd frontend
 npm install
 ```
 

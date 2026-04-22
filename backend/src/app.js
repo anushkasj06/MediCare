@@ -26,7 +26,9 @@ const automationRoutes    = require('./routes/automation.routes')
 
 const app = express()
 
-const configuredOrigins = (process.env.FRONTEND_URL || 'http://localhost:5173')
+const DEFAULT_PROD_FRONTEND_URL = 'https://medicare-phi-two.vercel.app'
+
+const configuredOrigins = (process.env.FRONTEND_URL || DEFAULT_PROD_FRONTEND_URL)
   .split(',')
   .map(origin => origin.trim())
   .filter(Boolean)

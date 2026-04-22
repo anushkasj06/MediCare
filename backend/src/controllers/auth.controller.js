@@ -12,6 +12,23 @@ const { sendSuccess, sendError } = require('../utils/response')
 // OTP store (in production use Redis)
 const otpStore = new Map()
 
+const DEFAULT_DEV_FRONTEND_URL = 'http://localhost:5173'
+const DEFAULT_PROD_FRONTEND_URL = 'https://medicare-phi-two.vercel.app'
+
+const getFrontendBaseUrl = () => {
+  const fallbackUrl = process.env.NODE_ENV === 'production'
+    ? DEFAULT_PROD_FRONTEND_URL
+    : DEFAULT_DEV_FRONTEND_URL
+
+  const raw = process.env.FRONTEND_URL || fallbackUrl
+  const firstOrigin = raw
+    .split(',')
+    .map(value => value.trim())
+    .find(Boolean) || fallbackUrl
+
+  return firstOrigin.replace(/\/$/, '')
+}
+
 // POST /api/auth/register/patient
 exports.registerPatient = async (req, res) => {
   const {
@@ -39,7 +56,7 @@ exports.registerPatient = async (req, res) => {
 
   // Send verification email
   const emailToken = signEmailToken({ id: user._id, purpose: 'verify-email' })
-  const verifyLink = `${process.env.FRONTEND_URL}/verify-email?token=${emailToken}`
+  const verifyLink = `${getFrontendBaseUrl()}/verify-email?token=${emailToken}`
   try {
     const tmpl = emailTemplates.verifyEmail(user.fullName, verifyLink)
     await sendEmail({ to: user.email, ...tmpl })
@@ -185,7 +202,7 @@ exports.forgotPassword = async (req, res) => {
   // Always return success to prevent email enumeration
   if (user) {
     const token = signEmailToken({ id: user._id, purpose: 'reset-password' })
-    const link  = `${process.env.FRONTEND_URL}/reset-password/${token}`
+    const link  = `${getFrontendBaseUrl()}/reset-password/${token}`
     try {
       const tmpl = emailTemplates.resetPassword(user.fullName, link)
       await sendEmail({ to: user.email, ...tmpl })

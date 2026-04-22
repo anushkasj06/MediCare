@@ -1,7 +1,22 @@
 import axios from 'axios'
 
+const LOCAL_API_BASE_URL = 'http://localhost:5000/api'
+const PROD_API_BASE_URL = 'https://medicare-7pdq.onrender.com/api'
+
+const defaultApiBaseUrl = (() => {
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname
+    if (host === 'localhost' || host === '127.0.0.1') {
+      return LOCAL_API_BASE_URL
+    }
+  }
+  return PROD_API_BASE_URL
+})()
+
+const apiBaseUrl = import.meta.env.VITE_API_URL || defaultApiBaseUrl
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+  baseURL: apiBaseUrl,
   withCredentials: true,
   headers: { 'Content-Type': 'application/json' },
 })
@@ -26,7 +41,7 @@ api.interceptors.response.use(
         const auth = JSON.parse(localStorage.getItem('auth') || 'null')
         if (!auth?.refreshToken) throw new Error('No refresh token')
         const { data } = await axios.post(
-          `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/auth/refresh-token`,
+          `${apiBaseUrl}/auth/refresh-token`,
           { refreshToken: auth.refreshToken }
         )
         const updated = { ...auth, token: data.data.token, refreshToken: data.data.refreshToken }
