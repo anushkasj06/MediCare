@@ -1,0 +1,51 @@
+pipeline {
+  agent any
+  options {
+    ansiColor('xterm')
+    timestamps()
+  }
+  environment {
+    NODE_ENV = 'production'
+  }
+  stages {
+    stage('Checkout') {
+      steps {
+        checkout scm
+      }
+    }
+    stage('Install Dependencies') {
+      steps {
+        dir('frontend') {
+          script {
+            if (isUnix()) {
+              sh 'npm install'
+            } else {
+              bat 'npm install'
+            }
+          }
+        }
+      }
+    }
+    stage('Build Frontend') {
+      steps {
+        dir('frontend') {
+          script {
+            if (isUnix()) {
+              sh 'npm run build'
+              sh 'zip -r ../frontend-dist.zip dist'
+            } else {
+              bat 'npm run build'
+              bat 'powershell -Command "Compress-Archive -Path dist\\* -DestinationPath ..\\frontend-dist.zip -Force"'
+            }
+          }
+        }
+      }
+    }
+  }
+  post {
+    always {
+      archiveArtifacts artifacts: 'frontend-dist.zip', fingerprint: true
+      cleanWs()
+    }
+  }
+}
